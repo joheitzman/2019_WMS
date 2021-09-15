@@ -87,7 +87,7 @@ theme_pubr() +
     axis.text.y = element_text(size = 8))
 
 mhw2.plot/incidence.shidagaura.plot + plot_annotation(tag_levels = 'A')
-ggsave(filename = "Fig_1_Incidence.pdf", height = 3, width = 6)
+ggsave(filename = "Figure 1_Incidence.pdf", height = 3, width = 6)
 ```
 
 ##Figure 4 - ASV Table with bacteria taxon abundance from the WMS microbial mat compared with
@@ -130,17 +130,43 @@ physeq_all_G_heatmap_edit <- physeq_all_G_heatmap %>%
 ```
 
 ```{r heatmap, fig.width = 8, fig.height = 4}
+# textcol <- "grey40"
+# 
+# top_WMS <- physeq_all_G_heatmap_edit %>%
+#   filter(Sample == "WMS") %>%
+#   head(., n = 5) 
+# 
+# 
+# physeq_all_G_heatmap_edit%>%
+#     left_join(top_WMS,. , by = "Group") %>%
+# 
+#   ggplot( mapping = aes(x = Sample.y,y = Group,fill = Abundfactor.y)) +
+#   geom_tile() +
+#   xlab(label = "") + 
+#   theme_bw() +
+#   scale_fill_manual(values=rev(brewer.pal(8,"Blues")),na.value="grey90") +
+#   scale_y_discrete(expand=c(0,0)) +
+#   scale_x_discrete(expand=c(0,0)) +
+#   theme(legend.position="right",legend.direction="vertical",
+#         legend.title=element_blank(),
+#         legend.margin=margin(grid::unit(0,"cm")),
+#         legend.text=element_text(colour=textcol,size=12,face="bold"),
+#         legend.key.height=grid::unit(0.8,"cm"),
+#         legend.key.width=grid::unit(0.2,"cm"),
+#         axis.text.x=element_text(size=10,colour=textcol),
+#         axis.text.y=element_text(size=14, vjust=0.2,colour=textcol),
+#         axis.ticks=element_line(size=0.4),
+#         axis.ticks.y = element_blank(),
+#         axis.title.y = element_blank(),
+#         plot.background=element_blank(),
+#         panel.border=element_blank(),
+#         plot.margin=margin(0.7,0.4,0.1,0.2,"cm"),
+#         plot.title=element_text(colour=textcol,hjust=0,size=14,face="bold"))
+# 
+# heatmap.plot 
+
 textcol <- "grey40"
-
-top_WMS <- physeq_all_G_heatmap_edit %>%
-  filter(Sample == "WMS") %>%
-  head(., n = 5) 
-
-
-physeq_all_G_heatmap_edit%>%
-    left_join(top_WMS,. , by = "Group") %>%
-
-  ggplot( mapping = aes(x = Sample.y,y = Group,fill = Abundfactor.y)) +
+heatmap.plot <- ggplot(data = physeq_all_G_heatmap_edit, mapping = aes(x = Sample,y = Group,fill = Abundfactor)) +
   geom_tile() +
   xlab(label = "") + 
   theme_bw() +
@@ -150,11 +176,11 @@ physeq_all_G_heatmap_edit%>%
   theme(legend.position="right",legend.direction="vertical",
         legend.title=element_blank(),
         legend.margin=margin(grid::unit(0,"cm")),
-        legend.text=element_text(colour=textcol,size=12,face="bold"),
+        legend.text=element_text(colour=textcol,size=6,face="bold"),
         legend.key.height=grid::unit(0.8,"cm"),
         legend.key.width=grid::unit(0.2,"cm"),
-        axis.text.x=element_text(size=10,colour=textcol),
-        axis.text.y=element_text(size=14, vjust=0.2,colour=textcol),
+        axis.text.x=element_text(size=8,colour=textcol),
+        axis.text.y=element_text(size=8, vjust=0.2,colour=textcol),
         axis.ticks=element_line(size=0.4),
         axis.ticks.y = element_blank(),
         axis.title.y = element_blank(),
@@ -164,7 +190,7 @@ physeq_all_G_heatmap_edit%>%
         plot.title=element_text(colour=textcol,hjust=0,size=14,face="bold"))
 
 heatmap.plot 
-ggsave("heatmap.pdf",width = 8, height = 3)
+ggsave(filename = "Figure 3_Bact Heatmap.pdf", height = 10, width = 7)
 ```
 
 ## Supplementary Figure - Size Frequency of disease occurrences from 2019 disease incidence
@@ -186,6 +212,7 @@ size.freq.plot.2019 <- ggplot(data = size.freq.data.2019) +
   theme(legend.position = "none")
   
 size.freq.plot.2019
+ggsave(filename = "SI Figure 2_Size Freq.pdf", height = 5, width = 6)
 ```
 
 ##Supplementary Figure
@@ -266,12 +293,12 @@ axis.title.x = element_blank(),
     coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
 
 mhw2.plot/weekly.shidagaura.plot/weekly.suzaki.plot + plot_annotation(tag_levels = "A")
-ggsave(filename = "Fig_Supp_Incidence.pdf", height = 5, width = 6)
+ggsave(filename = "SI Figure 1_Incidence.pdf", height = 5, width = 6)
 ```
 
 ## Disease Prevalence from September 2013 to December 2020
 ## Paired with daily SST of the area and heatwave occurrence
-```{r fig 2 Prevalence}
+```{r fig 4 Prevalence}
 OISST <- readRDS("shimoda_time_series_updated.rda")
 
 ts <- ts2clm(OISST, climatologyPeriod = c("1982-01-01", "2011-12-31"))
@@ -325,7 +352,7 @@ SC.GE.plot <-
   geom_line(aes(y = mean)) +
   geom_point(aes(y = mean),size = 1) +
   geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd)) +
-  labs(y= expression(atop(paste(bold("Sediment Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
   geom_hline(yintercept = 0, color = "grey") +
   theme_pubr() +
     theme(
@@ -367,6 +394,8 @@ Dis_Count.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Dis_Count)) +
   scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
 
 Dis.Prev.plot/Dis_Count.plot/mhw2.plot/SC.GE.plot + plot_annotation(tag_levels = 'A')
+
+ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 9, width = 7)
 ```
 
 ##Calculation of average temperature during disease outbreaks
