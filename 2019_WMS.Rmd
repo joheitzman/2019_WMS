@@ -88,6 +88,7 @@ theme_pubr() +
 
 mhw2.plot/incidence.shidagaura.plot + plot_annotation(tag_levels = 'A')
 ggsave(filename = "Figure 1_Incidence.pdf", height = 3, width = 6)
+ggsave(filename = "Figure 1_Incidence.png", height = 3, width = 6)
 ```
 
 ##Figure 4 - ASV Table with bacteria taxon abundance from the WMS microbial mat compared with
@@ -191,6 +192,7 @@ heatmap.plot <- ggplot(data = physeq_all_G_heatmap_edit, mapping = aes(x = Sampl
 
 heatmap.plot 
 ggsave(filename = "Figure 3_Bact Heatmap.pdf", height = 10, width = 7)
+ggsave(filename = "Figure 3_Bact Heatmap.png", height = 10, width = 7)
 ```
 
 ## Supplementary Figure - Size Frequency of disease occurrences from 2019 disease incidence
@@ -213,6 +215,7 @@ size.freq.plot.2019 <- ggplot(data = size.freq.data.2019) +
   
 size.freq.plot.2019
 ggsave(filename = "SI Figure 2_Size Freq.pdf", height = 5, width = 6)
+ggsave(filename = "SI Figure 2_Size Freq.png", height = 5, width = 6)
 ```
 
 ##Supplementary Figure
@@ -294,6 +297,7 @@ axis.title.x = element_blank(),
 
 mhw2.plot/weekly.shidagaura.plot/weekly.suzaki.plot + plot_annotation(tag_levels = "A")
 ggsave(filename = "SI Figure 1_Incidence.pdf", height = 5, width = 6)
+ggsave(filename = "SI Figure 1_Incidence.png", height = 5, width = 6)
 ```
 
 ## Disease Prevalence from September 2013 to December 2020
@@ -396,6 +400,7 @@ Dis_Count.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Dis_Count)) +
 Dis.Prev.plot/Dis_Count.plot/mhw2.plot/SC.GE.plot + plot_annotation(tag_levels = 'A')
 
 ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 9, width = 7)
+ggsave(filename = "Figure 4_LT Prevalence.png", height = 9, width = 7)
 ```
 
 ##Calculation of average temperature during disease outbreaks
