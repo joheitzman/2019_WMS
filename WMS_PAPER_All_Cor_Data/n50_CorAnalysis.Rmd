@@ -1,0 +1,193 @@
+---
+title: "50 random quadrats_Shidagaura"
+author: "Joshua Heitzman"
+date: "2022-05-12"
+output:
+  html_notebook: null
+---
+```{r setup, include=TRUE, warning = FALSE, message = FALSE}
+library("scales")
+library("ggplot2")
+library("forcats")
+library("tibble")
+library("ggpubr")
+library("patchwork")
+library("dplyr")
+library("tidyverse")
+library(rstatix)
+
+Sys.setlocale("LC_ALL","English")
+```
+```{r size_class of colonies_occurrence}
+
+size_class.data <- read.csv("Shida_Prev_SizeClassn50.csv")
+
+ggplot(size_class.data, aes(x = Colony_SA, y = Disease_SA, color = Date)) +
+  geom_point()
+  
+shitcsv <- read.csv("2022_06_ShitCSV.csv") %>% drop_na()
+
+ggplot(shitcsv, aes(x = Date, y = Disease_Incidence, color = mean_Colony_SA)) +
+  geom_point() 
+
+summary(aov(Disease_Incidence~mean_Colony_SA, data = shitcsv))
+
+
+
+x1 <- ggplot(size_class.data) +
+  geom_boxplot(aes(x = NULL, y = Colony_SA))
+x2 <- ggplot(size_class.data) +
+  geom_boxplot(aes(x = NULL, y = Disease_SA))
+
+x1|x2
+
+
+summary(lm(data = size_class.data, Disease_SA ~ Colony_SA))
+
+attach(size_class.data)
+
+summary(shapiro_test(Colony_SA,Disease_SA))
+
+detach(size_class.data)
+```
+
+```{r figure 50 prevalence}
+n50.data <- read.csv("Shida_Prev_n50_Simple.csv") %>% mutate(Date= as.Date(Date))
+
+plot.dis.count <- ggplot(n50.data, aes(x = Date, y = Dis_Count)) +
+  geom_point()
+plot.temp <- ggplot(n50.data, aes(x = Date, y = HOBO_temp_avg_onday)) +
+  geom_point()
+plot.sge <- ggplot(n50.data, aes(x = Date, y = SGE_Presence)) +
+  geom_point()
+
+plot.dis.count/plot.sge/plot.temp
+
+##
+
+plot.dis.presence <- ggplot(n50.data, aes(x = Date, y = Dis_Presence)) +
+  geom_point()
+
+plot.dis.presence/plot.sge/plot.temp
+
+##
+
+ggplot(n50.data, aes(x = Dis_Count, y = HOBO_temp_avg_onday)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(n50.data, aes(x = Dis_Presence, y = HOBO_temp_avg_onday)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+##
+
+ggplot(n50.data, aes(x = SGE_Presence, y = HOBO_temp_avg_onday)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+##
+
+ggplot(n50.data, aes(x = Dis_Presence, y = SGE_Presence)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+summary(lm(data = n50.data, Dis_Presence ~ HOBO_temp_avg_onday))
+
+summary(lm(data = n50.data, SGE_Presence ~ HOBO_temp_avg_onday))
+
+summary(lm(data = n50.data, Dis_Presence ~ SGE_Presence))
+
+
+
+
+
+# library(interactions)
+# 
+# interact_plot(model = "lm", )
+
+```
+
+
+
+```{r, fig.height = 6, fig.width= 8}
+q50_dis.plot <- ggplot(data = n50.data, aes(x = Date, y = Dis_Presence)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "grey") +
+  geom_col(width = .1, color = "black") +
+  labs(y = "Disease Presence", x = "") +
+  scale_x_date(date_breaks = "1 month",
+               date_labels = "%m-%y") +
+  coord_cartesian(ylim = c(0,50)) +
+  theme_bw() +
+  theme(
+    axis.title.y = element_text(size = 10)
+  )
+
+q50_GE.plot <- ggplot(data = n50.data, aes(x = Date, y = SGE_Presence)) +
+  geom_point()+
+  geom_col(width = .1, color = "black") +
+  geom_hline(yintercept = 0, color = "grey") +
+  labs(y = "Senescing Algae Presence", x = "") +
+  scale_x_date(date_breaks = "1 month",
+               date_labels = "%m-%y")+
+  coord_cartesian(ylim = c(0,50)) +
+  theme_bw()+
+  theme(
+    axis.title.y = element_text(size = 10)
+  )
+
+q50_temp.plot <- ggplot(data = n50.data, aes(x = Date, y = HOBO_temp_avg_onday)) +
+  geom_point()+
+  geom_col(width = .1, color = "black") +
+  geom_hline(yintercept = 15, color = "grey") +  
+  labs(y = "Survey Date Mean Temp (°C)", x = "Date (month - year)") +
+  scale_x_date(date_breaks = "1 month",
+               date_labels = "%m-%y")+
+  coord_cartesian(ylim = c(15,30)) +
+  theme_bw()+
+  theme(
+    axis.title.y = element_text(size = 10)
+  )
+  
+
+q50_dis.plot/q50_GE.plot/q50_temp.plot + plot_annotation(tag_levels = "A")
+ggsave(filename = "q50stackedplot_SI.png", width = 8, height = 6)
+
+
+
+
+
+
+####
+
+
+summary(lm(data = n50.data, Dis_Presence ~ HOBO_temp_avg_onday*SGE_Presence,family = poisson))
+MODEL1<-(lm(data = n50.data, Dis_Presence ~ HOBO_temp_avg_onday*SGE_Presence))
+summary(MODEL1)
+Anova(MODEL1)
+#plot_model(MODEL1,type = "int",show.data = TRUE)
+residuals_SGE <- lm(data = n50.data, SGE_Presence ~ HOBO_temp_avg_onday)
+
+plot(residuals_SGE)
+residuals_SGE<-residuals(residuals_SGE)
+
+
+summary(lm(data = n50.data, residuals_SGE ~ Dis_Presence+HOBO_temp_avg_onday))
+
+```
+
+```{r zero inf}
+
+n50zeroinf.data <- read.csv("Shida_Prev_n50_Simple.csv") %>% mutate(Date= as.Date(Date)) %>%
+  mutate(temp_int = as.integer(HOBO_temp_avg_onday))
+library(pscl)
+summary(zeroinfl(Dis_Presence ~ temp_int  * SGE_Presence + temp_int  + SGE_Presence,  data = n50zeroinf.data))
+
+summary(glm(Dis_Presence ~ temp_int  * SGE_Presence , family = "poisson", data = n50zeroinf.data))
+
+
+```
+

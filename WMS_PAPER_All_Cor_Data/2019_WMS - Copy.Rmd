@@ -1,0 +1,303 @@
+---
+title: "Recurrent Disease Outbreak in a Warm Temperate Marginal Coral Community"
+author: "Joshua Heitzman"
+date: "28 January 2021"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: null
+  pdf_document: default
+  word_document: default
+---
+```{r setup, include=TRUE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+	fig.path = "figures/",
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png", "pdf", "ps"))
+
+library("scales")
+library("ggplot2")
+library("forcats")
+library("tibble")
+library("ggpubr")
+library("patchwork")
+library("dplyr")
+library("tidyverse")
+library("heatwaveR") # For detecting MHWs
+library("phyloseq") #For ASV input
+library("RColorBrewer")
+
+Sys.setlocale("LC_ALL","English")
+```
+
+## Disease Prevalence from September 2013 to December 2020
+## Paired with daily SST of the area and heatwave occurrence
+```{r fig 4 Prevalence}
+OISST <- readRDS("shimoda_time_series_updated.rda")
+
+ts <- ts2clm(OISST, climatologyPeriod = c("1982-01-01", "2011-12-31"))
+mhw <- detect_event(ts)
+
+mhw2 <- mhw$climatology %>%
+        filter(between(t, as.Date("2013-09-13"), as.Date("2020-12-08")))
+
+mhw2.plot <- ggplot(data = mhw2, aes(x = t)) +
+  geom_line(aes(y = temp, colour = "temp"), size = 0.5) +
+#  geom_flame(aes(y = temp, y2 = thresh, fill = "event"), show.legend = T) +
+  scale_colour_manual(name = "Line Colour",
+                      values = c("temp" = "black", 
+                                 "thresh" =  "grey60", 
+                                 "seas" = "black")) +
+  scale_fill_manual(name = "Event Colour", 
+                    values = c("event" = "red")) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  labs(y= expression(atop(paste(bold("Daily SST")), paste("(",degree ~C," )")))) +
+  coord_cartesian(ylim = c(10, 30)) +
+  theme_pubr() + theme(legend.position = "none") +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7),
+      panel.grid.minor.x = element_line(color = "grey"))   
+
+
+#Setting up prevalence data
+#Prevalence of sediment-trapping G. elegans, prevalence of disease and number of disease occurrences per survey
+SC.G.elegans.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  mutate(Coverage_Deg_G_elegans = (Deg_G_Elegans/64)*100) %>% 
+  group_by(Date) %>%
+  get_summary_stats(type = "mean_sd",WMS_Prevalence, Coverage_Deg_G_elegans) %>%
+  filter(variable %in% "Coverage_Deg_G_elegans")
+
+Prevalence.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  mutate(Coverage_Deg_G_elegans = (Deg_G_Elegans/64)*100) %>%
+  mutate(Percent_Prev = (WMS_Prevalence*100)) %>%
+  group_by(Date) %>%  
+  get_summary_stats(type = "mean_sd",Percent_Prev, Coverage_Deg_G_elegans) %>%
+  filter(variable %in% "Percent_Prev")
+
+SC.GE.plot <-
+  ggplot(data = SC.G.elegans.data, aes(x = Date)) +
+  geom_line(aes(y = mean)) +
+  geom_point(aes(y = mean),size = 1) +
+  geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd)) +
+  labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+Dis.Prev.plot <-
+  ggplot(data = Prevalence.data, aes(x = Date, y = mean)) +
+  geom_line() +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd)) +
+  labs(y= expression(atop(paste(bold("Disease")), paste("(% of Coral Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7) )+
+  coord_cartesian(ylim = c(0, 40)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")  
+
+Dis_Count.data <- read_csv("Dis_Count.csv")
+Dis_Count.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Dis_Count)) + 
+  geom_point(size = 1) +
+  geom_line() +
+  labs(x = "", y= expression(atop(paste(bold("Disease")), paste("(# of Occurrences)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+Dis_Cum.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Cum_Occ)) + 
+  geom_point(size = 1) +
+  geom_col() +
+  labs(x = "", y= expression(atop(paste(bold("Disease")), paste("(Cumulative Occurrence)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7),
+      panel.grid.minor.x = element_line(color = "grey"))+
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+Dis_Cum.plot/mhw2.plot + plot_annotation(tag_levels = 'A')
+
+#ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 9, width = 7)
+ggsave(filename = "SI Figure Cum_OCC.png", height = 4, width = 7)
+```
+
+```{r Long Term Prevalence Stats}
+##DATASETS##
+# Prevalence.data
+# Dis_Count.data
+# SC.G.elegans.data
+# mhw2
+mhwAvgperMonth <- mhw$climatology %>%
+        filter(between(t, as.Date("2013-09-01"), as.Date("2020-12-31"))) %>%
+        group_by(format(t, "%Y %m")) %>%
+        summarise(mean_temp = mean(seas))
+
+mhw2 <- mhw$climatology %>%
+        filter(between(t, as.Date("2013-09-13"), as.Date("2020-12-08")))
+
+write.csv(mhwAvgperMonth,file = "mhwAvgPerMonth.csv")
+
+Prevalence.data
+SC.G.elegans.data
+mhw2
+
+
+Davide.data <- data.frame(Prevalence.data$Date)
+
+Davide.data <- data.frame(Prevalence.data$Date, Prevalence.data$mean, SC.G.elegans.data$mean, temp1$seas) %>%
+  rename(Date = Prevalence.data.Date, dis.prev.mean = Prevalence.data.mean, GE.prev.mean = SC.G.elegans.data.mean, SST = temp1.seas)
+
+temp1 <- mhw2 %>% filter(t %in% Davide.data$Prevalence.data.Date)
+
+write.csv(Davide.data,file = "davide.csv")
+
+summary(lm(dis.prev.mean ~  SST, data = Davide.data))
+summary(lm(dis.prev.mean ~  GE.prev.mean, data = Davide.data))
+
+
+anova(lm(dis.prev.mean ~  GE.prev.mean * SST, data = Davide.data))
+
+
+
+
+
+###
+monthmovedforsg <- read.csv(file = "davide.csv") 
+#GE prev was moved forward one space to see if it lines up with disease outbreaks
+#GE highest prevalence would be BEFORE the outbreak period
+
+summary(lm(log(dis.prev.mean+1)  ~  SST, data = monthmovedforsg))
+summary(lm(log(dis.prev.mean+1) ~  GE.prev.mean, data = monthmovedforsg))
+
+summary(lm(log(dis.prev.mean+1) ~  GE.prev.mean*SST, data = monthmovedforsg))
+
+anova(aov(dis.prev ~  ge.prev * temp, data = monthmovedforsg))
+
+
+
+library(pscl)
+
+Davide.data <- Davide.data %>% mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      SST = as.integer(SST))
+library(MASS)
+summary(zeroinfl(dis.prev.mean ~ SST  + GE.prev.mean+SST  * GE.prev.mean, data = Davide.data))
+
+glm.nb(dis.prev.mean ~ SST * GE.prev.mean, data = Davide.data)
+
+
+
+MonthlyTemp <- read.csv(file = "DataWMonthly.csv") %>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp  * GE.prev.mean, data = MonthlyTemp))
+
+summary(glm(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp))
+
+
+MonthlyTemp_1monthahead <- read.csv(file = "DataWMonthly - Copy.csv")%>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp  * GE.prev.mean, data = MonthlyTemp_1monthahead))
+
+library(car)
+summary(glm.nb(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_1monthahead))
+
+
+
+
+MonthlyTemp_outbreak <- read.csv(file = "DataWMonthly - Copy outbreak.csv") %>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+
+summary(lm(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_outbreak))
+
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp +monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_outbreak))
+plot_model(DAV,type="int",show.data = TRUE)
+library(sjPlot)
+```
+
+
+```{r}
+
+Coral_Coverage.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  group_by(Date) %>%
+  summarise(meanSA_PH = mean(SA_PH), sdSA_PH = sd(SA_PH))
+
+
+Coral_Coverage.plot <-
+  ggplot(data = Coral_Coverage.data, aes(x = Date, y = meanSA_PH)) +
+  geom_line() +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymax = meanSA_PH + sdSA_PH, ymin = meanSA_PH - sdSA_PH)) +
+  #labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  #coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+
+Coral_Point.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  group_by(Date) %>%
+  summarise(mean64_PH = mean(Healthy_Coral)/64, sd64_PH = sd(Healthy_Coral)/64)
+
+
+Coral_Point.plot <-
+  ggplot(data = Coral_Point.data, aes(x = Date, y = mean64_PH)) +
+  geom_line() +
+  geom_smooth(type = "lm") +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymax = mean64_PH + sd64_PH, ymin = mean64_PH - sd64_PH)) +
+  #labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  #coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+```
+

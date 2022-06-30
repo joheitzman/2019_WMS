@@ -107,7 +107,7 @@ physeq_all_G_heatmap <- psmelt(physeq_all_G)
 physeq_all_G_heatmap2 <- physeq_all_G_heatmap
 
 physeq_all_G_heatmap2$Sample <- factor(physeq_all_G_heatmap2$Sample, 
-  levels = c("ï..Disease", "Gelidium", "Health", "Sediment"), 
+  levels = c("?..Disease", "Gelidium", "Health", "Sediment"), 
   labels = c("a","b", "c", "d"), ordered=TRUE)
 
 physeq_names <- 
@@ -118,7 +118,7 @@ physeq_names <-
   arrange(-a,-b,-c,-d)
 
 physeq_all_G_heatmap$Sample <- factor(physeq_all_G_heatmap$Sample, 
-  levels = c("ï..Disease", "Gelidium", "Health", "Sediment"), 
+  levels = c("?..Disease", "Gelidium", "Health", "Sediment"), 
   labels = c("WMS","G. Elegans", "Healthy Coral", "Sediment"), ordered=TRUE)
 
 physeq_all_G_heatmap_edit <- physeq_all_G_heatmap %>%
@@ -218,6 +218,57 @@ ggsave(filename = "SI Figure 2_Size Freq.pdf", height = 5, width = 6)
 ggsave(filename = "SI Figure 2_Size Freq.png", height = 5, width = 6)
 ```
 
+
+
+```{r size frequency FROM LONG-TERM}
+size.freq.data.LONG <- read.csv("Dis_Monthly_SIZEFREQ.csv") %>% drop_na() %>% filter(Year == "ALL") %>% mutate(Size = as.factor(Size) )
+size.freq.data.SHORT <- read.csv("Shida_Prev_SizeSIZEFREQ.csv") %>% drop_na()  %>% mutate(Size = as.factor(Size))
+
+size.freq.plot.LONG <- ggplot(data = size.freq.data.LONG) +
+  geom_col(aes(x = Size, y = Percent*100), position='dodge') +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_text (size = 10),
+      axis.title.y = element_text (size = 10),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,100), labels = function(x) paste0(x, "%")) +
+  coord_cartesian(ylim = c(0,50)) +
+  labs(x = expression("Size (cm"^2*")"), y  = expression(atop(paste(bold("2013 to 2020 Disease Outbreaks")), paste("Size Frequency of Infected Coral Colonies (%)"))))+
+  theme(legend.position = "none")
+  
+size.freq.plot.SHORT <- ggplot(data = size.freq.data.SHORT) +
+  geom_col(aes(x = Size, y = Percent*100), position='dodge') +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_text (size = 10),
+      axis.title.y = element_text (size = 10),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,100), labels = function(x) paste0(x, "%")) +
+  coord_cartesian(ylim = c(0,50)) +
+  labs(x = expression("Size (cm"^2*")"), y  = expression(atop(paste(bold("2020 to 2021 Disease Outbreaks")), paste("Size Frequency of Infected Coral Colonies (%)"))))+
+  theme(legend.position = "none")
+
+size.freq.plot.LONG|size.freq.plot.SHORT
+
+# ggsave(filename = "SI Figure 2_Size Freq.pdf", height = 5, width = 6)
+ggsave(filename = "SI Figure LONGSHORT SIZEFREQ.png", height = 5, width = 8)
+
+kruskal.test(Percent ~  Count*Size, data = size.freq.data.LONG)
+kruskal.test(Percent ~  Size, data = size.freq.data.SHORT)
+
+
+
+```
+
+
+
+
+
+
+
+
 ##Supplementary Figure
 ##2019 disease incidence of both sites (Shidagaura and Suzaki) paired with daily SST
 ```{r 2019 Disease Incidence (both sites), fig.height = 4, fig.width = 8}
@@ -232,9 +283,9 @@ mhw2 <- mhw$climatology %>%
 
 mhw2.plot <- ggplot(data = mhw2, aes(x = t)) +
 
-  geom_line(aes(y = temp, colour = "temp")) +
+  geom_line(aes(y = temp, colour = "temp"), size = 1) +
     #geom_line(aes(y = thresh, colour = "thresh"), size = 0.5, lty = "solid") +
-    geom_line(aes(y = seas, colour = "seas"), size = 0.5, lty = "dotted") +
+    geom_line(aes(y = seas, colour = "seas"), size = 0.75, lty = "dotted") +
     #geom_flame(aes(y = temp, y2 = thresh, fill = "event"), show.legend = T) +
   scale_colour_manual(name = "Line Colour",
                       values = c("temp" = "black", 
@@ -250,11 +301,13 @@ mhw2.plot <- ggplot(data = mhw2, aes(x = t)) +
     theme(
       axis.title.x = element_blank(),
       axis.title.y = element_text (size = 9),
-      axis.text.x = element_blank(),
+      axis.text.x = element_text(size = 8),
       axis.text.y = element_text(size = 8),
       axis.ticks.x = element_blank(),
-      plot.margin = margin(6,6,3,6, unit = "pt")) +
+      plot.margin = margin(6,6,3,6, unit = "pt"))+
+     # panel.grid.minor.x = element_line(color = "grey"))  +
       scale_y_continuous(expand = c(0,0), limits = c(-1,30))
+      
 
 weekly.suzaki.data <- read_csv("2019_Incidence_2.5_Suzaki.csv") %>% 
   mutate(Date = as.Date(Date))  %>%
@@ -265,39 +318,126 @@ weekly.shidagaura.data <- read_csv("2019_Incidence_2.5.recheck.csv")%>%
         filter(between(Date, as.Date("2019-05-24"), as.Date("2020-02-15")))
 
 weekly.suzaki.plot <- ggplot(data = weekly.suzaki.data, aes(x = Date, y = Incidence)) + 
-  geom_point() +
-  geom_segment(aes(xend = Date, yend = 0 )) +
+  geom_point(size = 1.5) +
+  geom_line() +
   labs(x="",y = expression(atop(paste(bold("Site 2")), paste("Disease Incidence")))) +
   geom_hline(yintercept = 0, color = "grey") +
   theme_pubr() +
   theme(
-      axis.title.x = element_text (size = 10),
+      axis.title.x = element_blank(),
       axis.title.y = element_text (size = 10),
-      axis.text.x = element_text (size = 8),
-      axis.text.y = element_text(size = 8)) +
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 8))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
   scale_x_date(expand = c(0.004,0),date_breaks = "1 month", date_labels = "%b %Y") +
   scale_y_continuous(expand = c(0,0), limits = c(-1,30)) +
     coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
 
 weekly.shidagaura.plot <- ggplot(data = weekly.shidagaura.data, aes(x = Date, y = Incidence)) + 
-  geom_point() +
-  geom_segment(aes(xend = Date, yend = 0 )) +
+  geom_point(size = 1.5) +
+  geom_line() +
   labs(x="",y = expression(atop(paste(bold("Site 1")), paste("Disease Incidence")))) +
   geom_hline(yintercept = 0, color = "grey") +
   theme_pubr() +
   theme(
-axis.title.x = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 10),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 8),
+      axis.ticks.x = element_blank(),
+      panel.grid.minor.x = element_line(color = "grey"))  +
+      scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b %Y") +
+      scale_y_continuous(expand = c(0,0), limits = c(-1,30))+
+    coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
+
+weekly.shidagaura.plot/weekly.suzaki.plot/mhw2.plot + plot_annotation(tag_levels = "A")
+ggsave(filename = "SI Figure 1_Incidence.pdf", height = 5, width = 6)
+ggsave(filename = "SI Figure 1_Incidence.png", height = 5, width = 6)
+
+
+cum.suzaki.plot <- ggplot(data = weekly.suzaki.data, aes(x = Date, y = Cum_Occ)) + 
+  geom_col(width = 3) +
+  labs(x="",y = expression(atop(paste(bold("Site 2")), paste("Cumulative Occurrence")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+  theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 9),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 8))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  scale_x_date(expand = c(0.004,0),date_breaks = "1 month", date_labels = "%b %Y") +
+  #scale_y_continuous(expand = c(0,0), limits = c(-1,30)) +
+    coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
+
+cum.shidagaura.plot <- ggplot(data = weekly.shidagaura.data, aes(x = Date, y = Cum_Occ)) + 
+  geom_col(width = 3) +
+  labs(x="",y = expression(atop(paste(bold("Site 1")), paste("Cumulative Occurrence")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+  theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 9),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 8),
+      axis.ticks.x = element_blank())+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+      scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b %Y") +
+      #scale_y_continuous(expand = c(0,0), limits = c(-1,30))+
+    coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
+
+cum.shidagaura.plot/cum.suzaki.plot/mhw2.plot +plot_annotation(tag_levels = "A")
+ggsave(filename = "SI Cum_Figure_Incidence.png", height = 5, width = 6)
+
+
+
+
+allsitesincidence.data <- read.csv(file = "2019_Incidence_2.5.ALL.csv") %>% mutate(Date = as.Date(Date))
+weekly.bothsites.plot <- ggplot(data = allsitesincidence.data, aes(x = Date, y = Incidence, color = Site)) + 
+  geom_col(size = 0.1, width=0.1)+
+  geom_point(size = 2.5) +
+  scale_color_manual(values=c("black", "grey")) +
+  labs(x="",y = expression(atop(paste(bold("Disease Incidence")), paste("# of new occurrences")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+  theme(
+      legend.position = "none",
+      legend.title = element_blank(),
+      axis.title.x = element_blank(),
       axis.title.y = element_text (size = 10),
       axis.text.x = element_blank(),
       axis.text.y = element_text(size = 8),
       axis.ticks.x = element_blank())+
-      scale_x_date(expand = c(0.004,0)) +
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+      scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b %Y") +
       scale_y_continuous(expand = c(0,0), limits = c(-1,30))+
     coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
 
-mhw2.plot/weekly.shidagaura.plot/weekly.suzaki.plot + plot_annotation(tag_levels = "A")
+weekly.bothsites.plot/mhw2.plot + plot_annotation(tag_levels = "A")
 ggsave(filename = "SI Figure 1_Incidence.pdf", height = 5, width = 6)
 ggsave(filename = "SI Figure 1_Incidence.png", height = 5, width = 6)
+
+weekly.bothsites.plot <- ggplot(data = allsitesincidence.data, aes(x = Date, y = Cum_Occ)) + 
+  geom_col(width = 5)+
+  #scale_color_manual(values=c("black", "grey")) +
+  labs(x="",y = expression(atop(paste(bold("Disease Incidence")), paste("# of new occurrences")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+  theme(
+      legend.title = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 10),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 8),
+      axis.ticks.x = element_blank())+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+      scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b %Y") +
+      scale_y_continuous(expand = c(0,0), limits = c(-1,30))+
+    coord_cartesian(xlim = c(as.Date("2019-05-24"), as.Date("2020-02-15")))
+
+weekly.bothsites.plot/mhw2.plot + plot_annotation(tag_levels = "A")
+
+
 ```
 
 ## Disease Prevalence from September 2013 to December 2020
@@ -330,6 +470,7 @@ mhw2.plot <- ggplot(data = mhw2, aes(x = t)) +
       axis.title.y = element_text (size = 8),
       axis.text.x = element_blank(),
       axis.text.y = element_text(size = 7))
+      #panel.grid.minor.x = element_line(color = "grey"))
 
 #Setting up prevalence data
 #Prevalence of sediment-trapping G. elegans, prevalence of disease and number of disease occurrences per survey
@@ -354,23 +495,24 @@ Prevalence.data <-
 SC.GE.plot <-
   ggplot(data = SC.G.elegans.data, aes(x = Date)) +
   geom_line(aes(y = mean)) +
-  geom_point(aes(y = mean),size = 1) +
+  geom_point(aes(y = mean),size = 1.5) +
   geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd)) +
-  labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  labs(y= expression(atop(paste(bold("Senescing"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
   geom_hline(yintercept = 0, color = "grey") +
   theme_pubr() +
     theme(
       axis.title.x = element_blank(),
       axis.title.y = element_text(size = 8),
       axis.text.x = element_text(size = 8),  
-      axis.text.y = element_text(size = 7)) +  
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  + 
   coord_cartesian(ylim = c(0, 20)) +
   scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
 
 Dis.Prev.plot <-
   ggplot(data = Prevalence.data, aes(x = Date, y = mean)) +
   geom_line() +
-  geom_point(size = 1) +
+  geom_point(size = 1.5) +
   geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd)) +
   labs(y= expression(atop(paste(bold("Disease")), paste("(% of Coral Coverage)")))) +
   geom_hline(yintercept = 0, color = "grey") +
@@ -379,13 +521,14 @@ Dis.Prev.plot <-
       axis.title.x = element_blank(),
       axis.title.y = element_text(size = 8),
       axis.text.x = element_blank(),
-      axis.text.y = element_text(size = 7) )+
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
   coord_cartesian(ylim = c(0, 40)) +
   scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")  
 
 Dis_Count.data <- read_csv("Dis_Count.csv")
 Dis_Count.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Dis_Count)) + 
-  geom_point(size = 1) +
+  geom_point(size = 1.5) +
   geom_line() +
   labs(x = "", y= expression(atop(paste(bold("Disease")), paste("(# of Occurrences)")))) +
   geom_hline(yintercept = 0, color = "grey") +
@@ -394,14 +537,188 @@ Dis_Count.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Dis_Count)) +
       axis.title.x = element_blank(),
       axis.title.y = element_text(size = 8),
       axis.text.x = element_blank(),
-      axis.text.y = element_text(size = 7) )+
+      axis.text.y = element_text(size = 7))+
+     #panel.grid.minor.x = element_line(color = "grey"))  +
   scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
 
 Dis.Prev.plot/Dis_Count.plot/mhw2.plot/SC.GE.plot + plot_annotation(tag_levels = 'A')
 
-ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 9, width = 7)
-ggsave(filename = "Figure 4_LT Prevalence.png", height = 9, width = 7)
+#ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 7, width = 7)
+ggsave(filename = "Figure 4_LT Prevalence.png", height = 7, width = 7)
+
+mhw2.plot_1 <- ggplot(data = mhw2, aes(x = t)) +
+  geom_line(aes(y = temp, colour = "temp"), size = 0.5) +
+#  geom_flame(aes(y = temp, y2 = thresh, fill = "event"), show.legend = T) +
+  scale_colour_manual(name = "Line Colour",
+                      values = c("temp" = "black", 
+                                 "thresh" =  "grey60", 
+                                 "seas" = "black")) +
+  scale_fill_manual(name = "Event Colour", 
+                    values = c("event" = "red")) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  labs(y= expression(atop(paste(bold("Daily SST")), paste("(",degree ~C," )")))) +
+  coord_cartesian(ylim = c(10, 30)) +
+  theme_pubr() + theme(legend.position = "none") +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7))
+      #panel.grid.minor.x = element_line(color = "grey"))   
+
+Dis_Cum.plot <- ggplot(data = Dis_Count.data, aes(x = Date, y = Cum_Occ)) + 
+  geom_col(width = 20) +
+  labs(x = "", y= expression(atop(paste(bold("Disease")), paste("(Cumulative Occurrence)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))+
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+Dis_Cum.plot/mhw2.plot_1 + plot_annotation(tag_levels = 'A')
+
+#ggsave(filename = "Figure 4_LT Prevalence.pdf", height = 9, width = 7)
+ggsave(filename = "SI Figure Cum_OCC.png", height = 4, width = 7)
 ```
+
+```{r Long Term Prevalence Stats}
+##DATASETS##
+# Prevalence.data
+# Dis_Count.data
+# SC.G.elegans.data
+# mhw2
+mhwAvgperMonth <- mhw$climatology %>%
+        filter(between(t, as.Date("2013-09-01"), as.Date("2020-12-31"))) %>%
+        group_by(format(t, "%Y %m")) %>%
+        summarise(mean_temp = mean(seas))
+
+mhw2 <- mhw$climatology %>%
+        filter(between(t, as.Date("2013-09-13"), as.Date("2020-12-08")))
+
+write.csv(mhwAvgperMonth,file = "mhwAvgPerMonth.csv")
+
+Prevalence.data
+SC.G.elegans.data
+mhw2
+
+
+Davide.data <- data.frame(Prevalence.data$Date)
+
+Davide.data <- data.frame(Prevalence.data$Date, Prevalence.data$mean, SC.G.elegans.data$mean, temp1$seas) %>%
+  rename(Date = Prevalence.data.Date, dis.prev.mean = Prevalence.data.mean, GE.prev.mean = SC.G.elegans.data.mean, SST = temp1.seas)
+
+temp1 <- mhw2 %>% filter(t %in% Davide.data$Prevalence.data.Date)
+
+write.csv(Davide.data,file = "davide.csv")
+
+summary(lm(dis.prev.mean ~  SST, data = Davide.data))
+summary(lm(dis.prev.mean ~  GE.prev.mean, data = Davide.data))
+summary(lm(GE.prev.mean ~  SST, data = Davide.data))
+summary(lm(dis.prev.mean ~  GE.prev.mean, data = Davide.data))
+
+summary(lm(dis.prev.mean ~  GE.prev.mean * SST, data = Davide.data))
+
+
+
+
+Decimal.Davide.data <- Davide.data %>%
+  mutate(dis.prev.mean = dis.prev.mean/100) %>%
+  mutate(GE.prev.mean = GE.prev.mean/100)
+
+QB_Model <- glm(dis.prev.mean ~  GE.prev.mean * SST, family = quasibinomial,  data = Decimal.Davide.data)
+summary(glm(dis.prev.mean ~  GE.prev.mean * SST, family = quasibinomial,  data = Decimal.Davide.data))
+
+Anova(glm(dis.prev.mean ~  GE.prev.mean * SST, family = quasibinomial,  data = Decimal.Davide.data))
+
+
+library(performance)
+check_overdispersion(QB_Model)
+
+
+
+
+
+
+
+
+
+temp_seg <- factor(ifelse(Davide.data$SST <= 23.082, "A","B"))
+
+Anova(lm(dis.prev.mean ~  SST, data = Davide.data))
+
+
+SST.Model <- lm(dis.prev.mean ~  SST, data = Davide.data)
+
+seg_sum <- segmented(SST.Model, ~temp_seg, psi = 20)
+
+summary(lm(log(dis.prev.mean+1) ~  temp_seg * GE.prev.mean, data = Davide.data))
+
+
+library(segmented)
+
+
+###
+monthmovedforsg <- read.csv(file = "davide.csv") 
+#GE prev was moved forward one space to see if it lines up with disease outbreaks
+#GE highest prevalence would be BEFORE the outbreak period
+
+summary(lm(log(dis.prev.mean+1)  ~  SST, data = monthmovedforsg))
+summary(lm(log(dis.prev.mean+1) ~  GE.prev.mean, data = monthmovedforsg))
+
+summary(lm(log(dis.prev.mean+1) ~  GE.prev.mean*SST, data = monthmovedforsg))
+
+anova(aov(dis.prev ~  ge.prev * temp, data = monthmovedforsg))
+
+
+
+library(pscl)
+
+Davide.data <- Davide.data %>% mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      SST = as.integer(SST))
+library(MASS)
+summary(zeroinfl(dis.prev.mean ~ SST  + GE.prev.mean+SST  * GE.prev.mean, data = Davide.data))
+
+glm.nb(dis.prev.mean ~ SST * GE.prev.mean, data = Davide.data)
+
+
+
+MonthlyTemp <- read.csv(file = "DataWMonthly.csv") %>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp  * GE.prev.mean, data = MonthlyTemp))
+
+summary(glm(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp))
+
+
+MonthlyTemp_1monthahead <- read.csv(file = "DataWMonthly - Copy.csv")%>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp  * GE.prev.mean, data = MonthlyTemp_1monthahead))
+
+library(car)
+summary(glm.nb(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_1monthahead))
+
+
+
+
+MonthlyTemp_outbreak <- read.csv(file = "DataWMonthly - Copy outbreak.csv") %>%mutate(dis.prev.mean = as.integer(dis.prev.mean),
+                                      GE.prev.mean = as.integer(GE.prev.mean),
+                                      monthly_avg_temp = as.integer(monthly_avg_temp))
+
+summary(lm(dis.prev.mean ~ monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_outbreak))
+
+summary(zeroinfl(dis.prev.mean ~ monthly_avg_temp  + GE.prev.mean+monthly_avg_temp +monthly_avg_temp * GE.prev.mean, data = MonthlyTemp_outbreak))
+plot_model(DAV,type="int",show.data = TRUE)
+library(sjPlot)
+```
+
 
 ##Calculation of average temperature during disease outbreaks
 ##2013 omitted due to surveys beginning at the end of the year (September 2013)
@@ -412,21 +729,371 @@ ts <- ts2clm(OISST, climatologyPeriod = c("1982-01-01", "2011-12-31"))
 mhw <- detect_event(ts)
 
 mhw2014 <- mhw$climatology %>%
-        filter(between(t, as.Date("2014-06-16"), as.Date("2014-11-10")))
+        filter(between(t, as.Date("2014-04-16"), as.Date("2014-11-10")))
 mhw2015 <- mhw$climatology %>%
-        filter(between(t, as.Date("2015-09-23"), as.Date("2015-11-24")))
+        filter(between(t, as.Date("2015-04-23"), as.Date("2015-11-24")))
 mhw2016 <- mhw$climatology %>%
-        filter(between(t, as.Date("2016-09-05"), as.Date("2016-12-20")))
+        filter(between(t, as.Date("2016-04-05"), as.Date("2016-12-20")))
 mhw2017 <- mhw$climatology %>%
-        filter(between(t, as.Date("2017-08-25"), as.Date("2017-12-11")))
+        filter(between(t, as.Date("2017-04-25"), as.Date("2017-12-11")))
 mhw2018 <- mhw$climatology %>%
-        filter(between(t, as.Date("2018-08-18"), as.Date("2018-11-02")))
+        filter(between(t, as.Date("2018-04-18"), as.Date("2018-11-02")))
 mhw2019 <- mhw$climatology %>%
-        filter(between(t, as.Date("2019-09-02"), as.Date("2019-11-15")))
+        filter(between(t, as.Date("2019-04-02"), as.Date("2019-11-15")))
 mhw2020 <- mhw$climatology %>%
-        filter(between(t, as.Date("2020-09-15"), as.Date("2020-10-14")))
+        filter(between(t, as.Date("2020-04-15"), as.Date("2020-10-14")))
 
 mhw_outbreak <- bind_rows(mhw2014,mhw2015,mhw2016,mhw2017,mhw2018,mhw2019,mhw2020) %>% 
   get_summary_stats(temp,type = "mean_sd")
+```
+
+##Correlation analysis for long-term monitoring data
+```{r correlation analysis}
+
+## Prevalence during the disease outbreaks separated by year
+prev_2014 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2014-06-16"), as.Date("2014-11-10"))) %>%
+        summarize(meanPrev2014 = mean)
+
+prev_2015 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2015-09-23"), as.Date("2015-11-24")))
+prev_2016 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2016-09-05"), as.Date("2016-12-20")))
+prev_2017 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2017-08-25"), as.Date("2017-12-11")))
+prev_2018 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2018-08-18"), as.Date("2018-11-02")))
+prev_2019 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2019-09-02"), as.Date("2019-11-15")))
+prev_2020 <- Prevalence.data %>%
+        filter(between(Date, as.Date("2020-09-15"), as.Date("2020-10-14")))
+
+Dis_2014 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2014-06-16"), as.Date("2014-11-10")))
+Dis_2015 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2015-09-23"), as.Date("2015-11-24")))
+Dis_2016 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2016-09-05"), as.Date("2016-12-20")))
+Dis_2017 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2017-08-25"), as.Date("2017-12-11")))
+Dis_2018 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2018-08-18"), as.Date("2018-11-02")))
+Dis_2019 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2019-09-02"), as.Date("2019-11-15")))
+Dis_2020 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2020-09-15"), as.Date("2020-10-14")))
+
+## G. elegans during the dsease outbreak separated by year
+SGE_2014 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2014-06-16"), as.Date("2014-11-10"))) %>%
+  rename(mean_SGE = mean)
+SGE_2015 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2015-09-23"), as.Date("2015-11-24")))%>%
+  rename(mean_SGE = mean)
+SGE_2016 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2016-09-05"), as.Date("2016-12-20")))%>%
+  rename(mean_SGE = mean)
+SGE_2017 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2017-08-25"), as.Date("2017-12-11")))%>%
+  rename(mean_SGE = mean)
+SGE_2018 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2018-08-18"), as.Date("2018-11-02")))%>%
+  rename(mean_SGE = mean)
+SGE_2019 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2019-09-02"), as.Date("2019-11-15")))%>%
+  rename(mean_SGE = mean)
+SGE_2020 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2020-09-15"), as.Date("2020-10-14")))%>%
+  rename(mean_SGE = mean)
+
+## G. elegans during the dsease outbreak separated by year
+SGE_one_2014 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2014-05-01"), as.Date("2014-10-31"))) %>%
+  rename(mean_one_SGE = mean)
+SGE_one_2015 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2015-08-01"), as.Date("2015-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2016 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2016-08-01"), as.Date("2016-11-30")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2017 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2017-07-01"), as.Date("2017-11-30")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2018 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2018-07-01"), as.Date("2018-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2019 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2019-08-01"), as.Date("2019-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2020 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2020-08-01"), as.Date("2020-09-30")))%>%
+  rename(mean_one_SGE = mean)
+## Temp from specific survey dates during disease outbreaks separated by year
+
+htemp2014 <- mhw2014 %>%
+        filter(t == "2014-06-16"| 
+               t == "2014-07-17"|
+               t == "2014-08-04"|
+               t == "2014-10-03"|
+               t == "2014-11-10")%>%
+  mutate(year = "2014")
+
+htemp2015 <-mhw2015 %>%
+        filter(t == "2015-09-23"| 
+               t == "2015-10-19"|
+               t == "2015-11-24")%>%
+  mutate(year = "2015")
+
+htemp2016 <- mhw2016 %>%
+        filter(t == "2016-09-05"| 
+               t == "2016-10-20"|
+               t == "2016-11-22"|
+               t == "2016-12-20")%>%
+  mutate(year = "2016")
+
+htemp2017 <- mhw2017 %>%
+        filter(t == "2017-08-25"| 
+               t == "2017-09-26"|
+               t == "2017-10-20"|
+               t == "2017-12-11")%>%
+  mutate(year = "2017")
+
+htemp2018 <- mhw2018 %>%
+        filter(t == "2018-08-18"| 
+               t == "2018-11-02")%>%
+  mutate(year = "2018")
+
+htemp2019 <- mhw2019 %>%
+        filter(t == "2019-09-02"| 
+               t == "2019-10-07"|
+               t == "2019-11-15")%>%
+  mutate(year = "2019")
+
+htemp2020 <- mhw2020 %>%
+        filter(t == "2020-09-15"| 
+               t == "2020-10-14") %>%
+  mutate(year = "2020")
+
+
+
+prev_temp.data <- bind_rows(cbind(htemp2014, prev_2014,SGE_2014, Dis_2014, SGE_one_2014),
+                            cbind(htemp2015, prev_2015,SGE_2015, Dis_2015, SGE_one_2015),
+                            cbind(htemp2016, prev_2016,SGE_2016, Dis_2016, SGE_one_2016),
+                            cbind(htemp2017, prev_2017,SGE_2017, Dis_2017, SGE_one_2017),
+                            cbind(htemp2018, prev_2018,SGE_2018, Dis_2018, SGE_one_2018),
+                            cbind(htemp2019, prev_2019,SGE_2019, Dis_2019, SGE_one_2019),
+                            cbind(htemp2020, prev_2020,SGE_2020, Dis_2020, SGE_one_2020))
+
+ggplot(data = prev_temp.data, aes(x = mean_SGE, y = Dis_Count)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+summary(lm(data = prev_temp.data, Dis_Count ~ ))
+
+
+
+cor.test(prev_2014$mean, htemp2014$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2015$mean, htemp2015$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2016$mean, htemp2016$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2017$mean, htemp2017$temp, method=c("pearson", "kendall", "spearman"))
+
+##cor.test(prev_2018$mean, htemp2018$temp, method=c("pearson", "kendall", "spearman"))
+
+cor.test(prev_2019$mean, htemp2019$temp, method=c("pearson", "kendall", "spearman"))
+
+
+##cor.test(prev_2020$mean, htemp2020$temp, method=c("pearson", "kendall", "spearman"))
+
+```
+
+```{r 1 month before_correlation analysis}
+
+
+meanDis_2014 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2014-06-16"), as.Date("2014-11-10")))
+meanDis_2015 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2015-09-23"), as.Date("2015-11-24")))
+meanDis_2016 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2016-09-05"), as.Date("2016-12-20")))
+meanDis_2017 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2017-08-25"), as.Date("2017-12-11")))
+meanDis_2018 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2018-08-18"), as.Date("2018-11-02")))
+meanDis_2019 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2019-09-02"), as.Date("2019-11-15")))
+meanDis_2020 <- Dis_Count.data %>%
+        filter(between(Date, as.Date("2020-09-15"), as.Date("2020-10-14")))
+
+## G. elegans during the dsease outbreak separated by year
+SGE_one_2014 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2014-05-01"), as.Date("2014-10-31"))) %>%
+  rename(mean_one_SGE = mean)
+SGE_one_2015 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2015-08-01"), as.Date("2015-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2016 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2016-08-01"), as.Date("2016-11-30")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2017 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2017-07-01"), as.Date("2017-11-30")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2018 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2018-07-01"), as.Date("2018-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2019 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2019-08-01"), as.Date("2019-10-31")))%>%
+  rename(mean_one_SGE = mean)
+SGE_one_2020 <- SC.G.elegans.data %>%
+        filter(between(Date, as.Date("2020-08-01"), as.Date("2020-09-30")))%>%
+  rename(mean_one_SGE = mean)
+## Temp from specific survey dates during disease outbreaks separated by year
+
+htemp2014 <- mhw2014 %>%
+        filter(t == "2014-06-16"| 
+               t == "2014-07-17"|
+               t == "2014-08-04"|
+               t == "2014-10-03"|
+               t == "2014-05-19")%>%
+  mutate(year = "2014")
+
+htemp2015 <-mhw2015 %>%
+        filter(t == "2015-09-23"| 
+               t == "2015-10-19"|
+               t == "2015-08-05")%>%
+  mutate(year = "2015")
+
+htemp2016 <- mhw2016 %>%
+        filter(t == "2016-09-05"| 
+               t == "2016-10-20"|
+               t == "2016-11-22")%>%
+  mutate(year = "2016")
+
+htemp2017 <- mhw2017 %>%
+        filter(t == "2017-08-25"| 
+               t == "2017-09-26"|
+               t == "2017-10-20"|
+               t == "2017-07-31")%>%
+  mutate(year = "2017")
+
+htemp2018 <- mhw2018 %>%
+        filter(t == "2018-08-18"| 
+               t == "2018-07-27")%>%
+  mutate(year = "2018")
+
+htemp2019 <- mhw2019 %>%
+        filter(t == "2019-09-02"| 
+               t == "2019-10-07"|
+               t == "2019-08-05")%>%
+  mutate(year = "2019")
+
+htemp2020 <- mhw2020 %>%
+        filter(t == "2020-09-15"| 
+               t == "2020-08-19") %>%
+  mutate(year = "2020")
+
+
+
+prev_temp.data <- bind_rows(cbind(htemp2014, SGE_one_2014),
+                            cbind(htemp2015,  SGE_one_2015),
+                            cbind(htemp2016, SGE_one_2016),
+                            cbind(htemp2017,  SGE_one_2017),
+                            cbind(htemp2018,  SGE_one_2018),
+                            cbind(htemp2019,  SGE_one_2019),
+                            cbind(htemp2020,  SGE_one_2020))
+
+ggplot(data = prev_temp.data, aes(x = temp, y = mean_one_SGE)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+summary(lm(data = prev_temp.data, mean_one_SGE ~ temp))
+
+
+
+cor.test(prev_2014$mean, htemp2014$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2015$mean, htemp2015$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2016$mean, htemp2016$temp, method=c("pearson", "kendall", "spearman"))
+cor.test(prev_2017$mean, htemp2017$temp, method=c("pearson", "kendall", "spearman"))
+
+##cor.test(prev_2018$mean, htemp2018$temp, method=c("pearson", "kendall", "spearman"))
+
+cor.test(prev_2019$mean, htemp2019$temp, method=c("pearson", "kendall", "spearman"))
+
+
+##cor.test(prev_2020$mean, htemp2020$temp, method=c("pearson", "kendall", "spearman"))
+
+```
+
+```{r}
+
+Coral_Coverage.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  group_by(Date) %>%
+  summarise(meanSA_PH = mean(SA_PH), sdSA_PH = sd(SA_PH))
+
+
+Coral_Coverage.plot <-
+  ggplot(data = Coral_Coverage.data, aes(x = Date, y = meanSA_PH)) +
+  geom_line() +
+  geom_point(size = 1.5) +
+  geom_errorbar(aes(ymax = meanSA_PH + sdSA_PH, ymin = meanSA_PH - sdSA_PH)) +
+  #labs(y= expression(atop(paste(bold("Sediment-Trapping"~bolditalic("G. elegans"))), paste("(% of Total Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  #coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+
+Coral_Point.data <- 
+  read_csv("Dis_Monthly_Monitoring.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  group_by(Date) %>%
+  summarise(mean64_PH = mean(Healthy_Coral)/64, sd64_PH = sd(Healthy_Coral)/64)
+
+
+Coral_Point.plot <-
+  ggplot(data = Coral_Point.data, aes(x = Date, y = mean64_PH*100)) +
+  geom_line() +
+  #geom_smooth(type = "lm") +
+  geom_point(size = 1.5) +
+  geom_errorbar(aes(ymax = mean64_PH*100 + sd64_PH*100, ymin = mean64_PH*100 - sd64_PH*100), width = 0) +
+  labs(y= expression(atop(paste(bold("Coral Coverage")), paste("(% Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  #coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 year", date_labels = "%Y")
+
+Dis.Prev.plot/Coral_Point.plot
+
+ggsave(filename = "coralcov_w_dis_SI.png", width = 5, height = 4)
+
+# write.csv(Coral_Point.data, "sep_year.csv")
+
+sep_year <- read.csv(file = "Dis_Monthly_Monitoring - Copy.csv") %>% drop_na() %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  group_by(Year) %>%
+  summarise(mean64_PH = mean(Healthy_Coral)/64, sd64_PH = sd(Healthy_Coral)/64)
+
+sep_year.all <- read.csv(file = "Dis_Monthly_Monitoring - Copy.csv") %>% drop_na() %>%
+  mutate(Date = as.Date(Date)) %>%
+  filter(between(Date, as.Date("2013-09-13"), as.Date("2020-12-08"))) %>%
+  summarise(mean64_PH = mean(Healthy_Coral)/64, sd64_PH = sd(Healthy_Coral)/64)
 ```
 

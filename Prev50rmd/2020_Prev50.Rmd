@@ -1,0 +1,259 @@
+---
+title: "White Mold Syndrome Outbreak in a Warm Temperate Marginal Coral Community"
+author: "Joshua Heitzman"
+date: "06 February 2020"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: null
+  pdf_document: default
+  word_document: default
+---
+
+
+## Prepare the environment
+
+```{r setup, include=TRUE, warning = FALSE, message = FALSE}
+
+#setup knitr option to render pdf and figures
+
+ knitr::opts_chunk$set(echo = FALSE,
+	fig.path = "figures/",
+	#fig.width = 8.1/cm(1),
+	message = FALSE,
+	warning = FALSE,
+	dev = c("png", "pdf", "ps")
+)
+#load the library
+
+library("scales")
+library("ggplot2")
+library("forcats")
+library("tibble")
+library("ggpubr")
+library("patchwork")
+# library("gridExtra")
+library("dplyr")
+library("tidyverse")
+#library("plyr")
+library(heatwaveR) # For detecting MHWs
+Sys.setlocale("LC_ALL","English")
+```
+
+```{r figure 50 prevalence, fig.width= 8, fig.height= 9}
+OISST <- readRDS("shimoda_time_series.rda")
+
+# Detect the events in a time series
+ts <- ts2clm(OISST, climatologyPeriod = c("1982-01-01", "2011-12-31"))
+mhw <- detect_event(ts)
+
+mhw2 <- mhw$climatology %>%
+        filter(between(t, as.Date("2020-07-20"), as.Date("2021-11-04")))
+
+n50mhw2.plot <- ggplot(data = mhw2, aes(x = t)) +
+  geom_line(aes(y = temp, colour = "temp"), size = 0.5) +
+  #geom_line(aes(y = thresh, colour = "thresh"), size = 0.5, lty = "solid") +
+  geom_line(aes(y = seas, colour = "seas"), size = 0.5, lty = "dotted") +
+  #geom_flame(aes(y = temp, y2 = thresh, fill = "event"), show.legend = T) +
+  scale_colour_manual(name = "Line Colour",
+                      values = c("temp" = "black",
+                                 "seas" = "black")) +
+  #scale_fill_manual(name = "Event Colour", 
+                    #values = c("event" = "red")) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 month", date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  #labs(y = expression(paste("Temperature (",degree ~ C, " )")), x = NULL) +
+  labs(y= expression(atop(paste(bold("Temperature")), paste("(",degree ~C," )")))) +
+  coord_cartesian(ylim = c(15, 30)) +
+  theme_pubr() + 
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 7),  
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+#Setting up groups for Prevalence data
+Colony.SA <- 
+  read_csv("Shida_Prev_n50.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  group_by(Date) %>%
+  get_summary_stats(Percentage, type = "mean_sd")
+
+#Sediment-trapping Gelidium plot
+n50.plot <-
+  ggplot(data = Colony.SA, aes(x = Date, y = mean)) +
+  geom_line(width = 1) +
+  geom_point(aes(y = mean),size = 1) +
+  #geom_errorbar(aes(ymax = mean + sd, ymin = pmax(mean - sd, 0))) +
+  geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd), size = 0.5, width = 3 ) +
+  labs(y= expression(atop(paste(bold("Disease Prevalence")), paste("(% of Coral Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+
+
+Presence.data <- read.csv(file = "Shida_Prev_n50_Simple.csv") %>% mutate(Date = as.Date(Date))
+
+dis_pres.plot <-
+  ggplot(data = Presence.data, aes(x = Date, y = Dis_Presence)) +
+  geom_line(width = 1) +
+  geom_point(size = 1) +
+  #geom_errorbar(aes(ymax = mean + sd, ymin = pmax(mean - sd, 0))) +
+  labs(y= expression(atop(paste(bold("Disease Presence")), paste("(# of quadrats with disease)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  coord_cartesian(ylim = c(0, 50)) +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+
+sge_pres.plot <-
+  ggplot(data = Presence.data, aes(x = Date, y = SGE_Presence)) +
+  geom_line(width = 1) +
+  geom_point(size = 1) +
+  #geom_errorbar(aes(ymax = mean + sd, ymin = pmax(mean - sd, 0))) +
+  labs(y= expression(atop(paste(bold("Senescing Alage Presence")), paste("(# of quadrats with senescing algae)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  coord_cartesian(ylim = c(0, 50)) +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+
+
+n50.plot/dis_pres.plot/sge_pres.plot/n50mhw2.plot + plot_annotation(tag_levels = "A")
+ggsave(filename = "n50plot.png")
+
+
+cum_occ.plot <-
+  ggplot(data = Presence.data, aes(x = Date, y = Cum_Occ)) +
+  geom_col(width = 10) +
+  #geom_errorbar(aes(ymax = mean + sd, ymin = pmax(mean - sd, 0))) +
+  labs(y= expression(atop(paste(bold("Disease Occurrences")), paste("Cumulative Occurrence")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text (size = 8),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  coord_cartesian(ylim = c(0, 50)) +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+
+n50mhw2.plot_1 <- ggplot(data = mhw2, aes(x = t)) +
+  geom_line(aes(y = temp, colour = "temp"), size = 0.5) +
+  #geom_line(aes(y = thresh, colour = "thresh"), size = 0.5, lty = "solid") +
+  geom_line(aes(y = seas, colour = "seas"), size = 0.5, lty = "dotted") +
+  #geom_flame(aes(y = temp, y2 = thresh, fill = "event"), show.legend = T) +
+  scale_colour_manual(name = "Line Colour",
+                      values = c("temp" = "black",
+                                 "seas" = "black")) +
+  #scale_fill_manual(name = "Event Colour", 
+                    #values = c("event" = "red")) +
+  scale_x_date(expand = c(0.004,0.004), date_breaks = "1 month", date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  #labs(y = expression(paste("Temperature (",degree ~ C, " )")), x = NULL) +
+  labs(y= expression(atop(paste(bold("Temperature")), paste("(",degree ~C," )")))) +
+  coord_cartesian(ylim = c(15, 30)) +
+  theme_pubr() + 
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 7),  
+      axis.text.y = element_text(size = 7))+
+      #panel.grid.minor.x = element_line(color = "grey"))  +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%b-%y")
+
+
+cum_occ.plot/n50mhw2.plot_1 + plot_annotation(tag_levels = "A")
+ggsave(filename = "SI Figure 50q_Cum_OCC.png", height = 4, width = 7)
+
+
+```
+
+## Figure 2 - Heatwave data - Sediment Covered G. elegans/Total Coverage - 
+            - Disease Prevalence/Coral Coverage - # of Occurrences/Survey from Prevalence data
+```{r Figure_2, echo = TRUE, eval = TRUE, fig.width= 7.48, fig.height= 8}
+
+#get_summary_stats(Prevalence.data,type = "mean_sd")
+#get_summary_stats(Dis_Count.data,type = "mean_sd")
+#get_summary_stats(mhw2,type = "mean_sd")
+#get_summary_stats(SC.G.elegans.data,type = "mean_sd")
+
+
+Dis.Prev.plot/Dis_Count.plot/mhw2.plot/SC.GE.plot + plot_annotation(tag_levels = 'A')
+
+ggsave(filename = "Fig_2_Prev.pdf")
+ggsave(filename = "Fig_2.PNG")
+```
+
+```{r, fig.height= 3, fig.width= 6}
+radial.data <- read.csv("Radial Belt Transect.csv")
+
+summary(lm(data = radial.data, Prevalence ~ Distance))
+
+ggplot(data = radial.data, aes(x = Distance, y = Prevalence)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+    labs(x = "Distance from epicenter (m)" ,y= expression(atop(paste(bold("Disease Prevalence")), paste("(% of Infected Individuals)")))) +
+  theme_pubr()
+
+ggsave(filename = "RBT.png")
+```
+
+```{r}
+RBTTime.data <- read.csv("Radial Belt TransectTime.csv")
+
+ggplot(data = RBTTime.data, aes(x = Distance, y = Prevalence, color = as.factor(DateSurvey), group = as.factor(DateSurvey))) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+Colony.SA <- 
+  read_csv("Shida_Prev_n50.csv") %>%
+  mutate(Date = as.Date(Date)) %>%
+  group_by(Date) %>%
+  get_summary_stats(Percentage, type = "mean_sd")
+
+#Sediment-trapping Gelidium plot
+n50.plot <-
+  ggplot(data = Colony.SA, aes(x = Date, y = mean)) +
+  geom_line(aes(y = mean)) +
+  geom_point(aes(y = mean),size = 1) +
+  geom_errorbar(aes(ymax = mean + sd, ymin = mean - sd), size = 0.5, width = 3 ) +
+  labs(y= expression(atop(paste(bold("Disease Prevalence")), paste("(% of Coral Coverage)")))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  theme_pubr() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_text(size = 8),
+      axis.text.x = element_text(size = 8),  
+      axis.text.y = element_text(size = 7)) +  
+  coord_cartesian(ylim = c(0, 20)) +
+  scale_x_date(expand = c(0.004,0), date_breaks = "1 month", date_labels = "%m-%y")
+
+
+n50.plot
+#ggsave(filename = "n50plot.png")
+```
+
